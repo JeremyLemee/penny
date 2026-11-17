@@ -317,6 +317,10 @@ turtle-heading = Raw Turtle
 turtle-danger-warning = Warning: typos and other syntactic errors can make your data unreadable.
 turtle-dataset-viewer-link = Back to safety.
 turtle-save-button = Save
+turtle-invalid-heading = Invalid Turtle syntax
+turtle-invalid-description = This content is not valid Turtle. Do you want to save it anyway?
+turtle-invalid-cancel-button = Cancel
+turtle-invalid-proceed-button = Save anyway
 turtle-update-toast-success = Saved. <undo-button>Undo.</undo-button>
 turtle-update-toast-error = There was an error saving your Turtle.
 

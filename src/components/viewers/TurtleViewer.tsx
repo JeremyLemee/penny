@@ -2,12 +2,15 @@ import { UrlString } from "@inrupt/solid-client";
 import React, { FC, FormEventHandler, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { MdCheck } from "react-icons/md";
+import { Parser } from "n3";
 import { SectionHeading } from "../ui/headings";
 import { ClientLocalized } from "../ClientLocalized";
 import { HasAccess } from "../HasAccess";
 import { useTurtle } from "../../hooks/turtle";
 import { useL10n } from "../../hooks/l10n";
 import { Spinner } from "../ui/Spinner";
+import { Modal } from "../ui/modal";
+import { Button } from "../ui/forms";
 
 interface Props {
   url: UrlString;
@@ -19,6 +22,10 @@ export const TurtleViewer: FC<Props> = (props) => {
 
   const [turtleToRestore, setTurtleToRestore] = useState<string>();
   const [formContent, setFormContent] = useState(file.data?.content ?? "");
+  const [invalidTurtle, setInvalidTurtle] = useState<{
+    content: string;
+    error: string;
+  }>();
   const l10n = useL10n();
 
   useEffect(() => {
@@ -30,14 +37,13 @@ export const TurtleViewer: FC<Props> = (props) => {
     file.save(turtleToRestore);
   }, [turtleToRestore, file]);
 
-  const saveChanges: FormEventHandler = (event) => {
-    event.preventDefault();
+  const saveContent = (content: string) => {
     const oldContent = file.data?.content;
     const undo = () => {
       setTurtleToRestore(oldContent);
     };
     file
-      .save(formContent)
+      .save(content)
       .then(() => {
         toast(
           <ClientLocalized
@@ -69,12 +75,63 @@ export const TurtleViewer: FC<Props> = (props) => {
       });
   };
 
+  const saveChanges: FormEventHandler = (event) => {
+    event.preventDefault();
+    try {
+      new Parser({ format: "text/turtle", baseIRI: props.url }).parse(
+        formContent,
+      );
+    } catch (error) {
+      setInvalidTurtle({
+        content: formContent,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return;
+    }
+    saveContent(formContent);
+  };
+
   if (!file.data) {
     return <Spinner />;
   }
 
   return (
     <>
+      <Modal
+        isOpen={invalidTurtle !== undefined}
+        onRequestClose={() => setInvalidTurtle(undefined)}
+        contentLabel={l10n.getString("turtle-invalid-heading")}
+        size="sm"
+      >
+        <div className="space-y-5">
+          <h2 className="text-2xl font-bold">
+            {l10n.getString("turtle-invalid-heading")}
+          </h2>
+          <p>{l10n.getString("turtle-invalid-description")}</p>
+          <pre className="max-h-60 overflow-auto whitespace-pre-wrap break-words rounded bg-gray-100 p-3">
+            {invalidTurtle?.error}
+          </pre>
+          <div className="flex space-x-5">
+            <Button
+              value={l10n.getString("turtle-invalid-cancel-button")}
+              className="flex-grow p-2"
+              autoFocus
+              onClick={() => setInvalidTurtle(undefined)}
+            />
+            <Button
+              value={l10n.getString("turtle-invalid-proceed-button")}
+              className="flex-grow p-2"
+              onClick={() => {
+                if (invalidTurtle) {
+                  const { content } = invalidTurtle;
+                  setInvalidTurtle(undefined);
+                  saveContent(content);
+                }
+              }}
+            />
+          </div>
+        </div>
+      </Modal>
       <div className="">
         <ClientLocalized id="turtle-heading">
           <SectionHeading>Raw Turtle</SectionHeading>
