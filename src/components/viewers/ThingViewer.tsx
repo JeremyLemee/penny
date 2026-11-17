@@ -19,6 +19,7 @@ import { HasAccess } from "../HasAccess";
 import { LoadedCachedDataset } from "../../hooks/dataset";
 import { useMediaQuery } from "../../hooks/mediaQuery";
 import { useL10n } from "../../hooks/l10n";
+import { useIssuerConfirmation } from "../../hooks/issuerConfirmation";
 import { SeeAlso } from "./things/SeeAlso";
 
 interface Props {
@@ -47,21 +48,24 @@ export const ThingViewer: FC<Props> = (props) => {
   ));
   const isMotionSafe = useMediaQuery("(prefers-reduced-motion: no-preference)");
   const l10n = useL10n();
+  const { requestUpdate, confirmation } = useIssuerConfirmation();
 
   const deleteThing = async () => {
     const updatedDataset = removeThing(props.dataset.data, props.thing);
-    try {
-      await props.dataset.save(updatedDataset);
-      props.onUpdate(props.thing);
-    } catch (e) {
-      if (e instanceof FetchError && e.statusCode === 403) {
-        toast(l10n.getString("thing-toast-error-not-allowed"), {
-          type: "error",
-        });
-      } else {
-        throw e;
+    requestUpdate(props.dataset.data, updatedDataset, async () => {
+      try {
+        await props.dataset.save(updatedDataset);
+        props.onUpdate(props.thing);
+      } catch (e) {
+        if (e instanceof FetchError && e.statusCode === 403) {
+          toast(l10n.getString("thing-toast-error-not-allowed"), {
+            type: "error",
+          });
+        } else {
+          throw e;
+        }
       }
-    }
+    });
   };
 
   const resourceUrl = getSourceUrl(props.dataset.data);
@@ -170,6 +174,7 @@ export const ThingViewer: FC<Props> = (props) => {
       className="relative rounded-xl rounded-t-2xl bg-gray-50 target:outline target:outline-4 target:outline-gray-700"
       id={encodeURIComponent(asUrl(props.thing))}
     >
+      {confirmation}
       <h3 className="flex items-center break-words rounded-t-xl bg-gray-700 p-5 text-lg font-bold text-white md:text-xl lg:text-2xl">
         <span className="flex min-w-0 shrink flex-grow items-center">
           {title}

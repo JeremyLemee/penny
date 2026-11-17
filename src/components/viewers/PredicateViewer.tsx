@@ -43,6 +43,7 @@ import { HasAccess } from "../HasAccess";
 import { hasAccess } from "../../functions/hasAccess";
 import { ldp } from "rdf-namespaces";
 import { useL10n } from "../../hooks/l10n";
+import { useIssuerConfirmation } from "../../hooks/issuerConfirmation";
 
 interface Props {
   dataset: LoadedCachedDataset;
@@ -53,6 +54,7 @@ interface Props {
 
 export const PredicateViewer: FC<Props> = (props) => {
   const l10n = useL10n();
+  const { requestUpdate, confirmation } = useIssuerConfirmation();
   const urlValues = getUrlAll(props.thing, props.predicate);
   const stringNoLocaleValues = getStringNoLocaleAll(
     props.thing,
@@ -138,18 +140,20 @@ export const PredicateViewer: FC<Props> = (props) => {
 
   const updateThing = async (updatedThing: ThingPersisted) => {
     const updatedDataset = setThing(props.dataset.data, updatedThing);
-    try {
-      await props.dataset.save(updatedDataset);
-      props.onUpdate(props.thing);
-    } catch (e) {
-      if (e instanceof FetchError && e.statusCode === 403) {
-        toast(l10n.getString("thing-toast-error-not-allowed"), {
-          type: "error",
-        });
-      } else {
-        throw e;
+    requestUpdate(props.dataset.data, updatedDataset, async () => {
+      try {
+        await props.dataset.save(updatedDataset);
+        props.onUpdate(props.thing);
+      } catch (e) {
+        if (e instanceof FetchError && e.statusCode === 403) {
+          toast(l10n.getString("thing-toast-error-not-allowed"), {
+            type: "error",
+          });
+        } else {
+          throw e;
+        }
       }
-    }
+    });
   };
 
   const copyToClipboard = async (value: string) => {
@@ -181,6 +185,7 @@ export const PredicateViewer: FC<Props> = (props) => {
         <PredicateUrl url={props.predicate} />
       </dt>
       <dd>
+        {confirmation}
         <ul>
           {urlValues.sort().map((value) => (
             <li key={value + "_urlObject"} className="pl-0">

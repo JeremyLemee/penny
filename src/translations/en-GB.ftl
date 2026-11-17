@@ -335,3 +335,6 @@ clientid-editor-redirect-url-input =
   .placeholder = e.g. https://…
   .title = Redirect URL
 clientid-update-toast-success = Saved
+
+oidc-issuer-missing-heading = Missing OIDC issuer
+oidc-issuer-missing-description = This document previously contained a solid:oidcIssuer triple, but the update has no triple with that predicate. Removing it may prevent sign-in. Do you want to save anyway?

@@ -1,6 +1,7 @@
 import {
   createThing,
   getSourceUrl,
+  getThing,
   ThingPersisted,
 } from "@inrupt/solid-client";
 import React, { FC, FormEventHandler, useState } from "react";
@@ -36,7 +37,10 @@ export const ThingAdder: FC<Props> = (props) => {
     return (
       <ThingViewer
         dataset={props.dataset}
-        thing={createThing({ url: thingUrl })}
+        thing={
+          getThing(props.dataset.data, thingUrl) ??
+          createThing({ url: thingUrl })
+        }
         onUpdate={onSetPredicate}
         collapsed={false}
       />

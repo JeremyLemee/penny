@@ -37,6 +37,7 @@ import { hasAccess } from "../../functions/hasAccess";
 import { useL10n } from "../../hooks/l10n";
 import { SWRConfig } from "swr";
 import { TurtleViewer } from "./TurtleViewer";
+import { useIssuerConfirmation } from "../../hooks/issuerConfirmation";
 
 interface Props {
   dataset: LoadedCachedDataset;
@@ -54,6 +55,7 @@ export const DatasetViewer: FC<Props> = (props) => {
     getContainedResourceUrlAll(props.dataset.data),
   );
   const l10n = useL10n();
+  const { requestUpdate, confirmation } = useIssuerConfirmation();
 
   useEffect(() => {
     if (!thingToRestore) {
@@ -61,10 +63,11 @@ export const DatasetViewer: FC<Props> = (props) => {
     }
 
     const updatedDataset = setThing(props.dataset.data, thingToRestore);
-    props.dataset.save(updatedDataset).then(() => {
-      setThingToRestore(undefined);
+    setThingToRestore(undefined);
+    requestUpdate(props.dataset.data, updatedDataset, () => {
+      props.dataset.save(updatedDataset);
     });
-  }, [thingToRestore, props.dataset]);
+  }, [thingToRestore, props.dataset, requestUpdate]);
 
   const [showRawTurtle, setShowRawTurtle] = useState(false);
   useEffect(() => {
@@ -341,6 +344,7 @@ export const DatasetViewer: FC<Props> = (props) => {
 
   return (
     <>
+      {confirmation}
       {datasetEditor}
       <LinkedResourcesViewer dataset={props.dataset} />
       {dangerZone}

@@ -1,4 +1,5 @@
 import {
+  createSolidDataset,
   createThing,
   getSourceUrl,
   getStringNoLocale,
@@ -15,6 +16,7 @@ import { VscLink } from "react-icons/vsc";
 import { toast } from "react-toastify";
 import { LoadedCachedDataset } from "../../hooks/dataset";
 import { useL10n } from "../../hooks/l10n";
+import { useIssuerConfirmation } from "../../hooks/issuerConfirmation";
 import { ClientLocalized } from "../ClientLocalized";
 
 export type Props = {
@@ -30,6 +32,7 @@ export const solid_oidc = {
 
 export const ClientIdViewer: React.FC<Props> = (props) => {
   const l10n = useL10n();
+  const { requestUpdate, confirmation } = useIssuerConfirmation();
   const url = getSourceUrl(props.dataset.data);
   const clientIdThing =
     getThing(props.dataset.data, url) ?? createThing({ url: url });
@@ -85,18 +88,22 @@ export const ClientIdViewer: React.FC<Props> = (props) => {
       scope: "openid webid offline_access",
     };
 
-    await overwriteFile(url, new Blob([JSON.stringify(clientId)]), {
-      fetch: fetch,
-      contentType: "application/ld+json",
+    // The generated client metadata does not contain solid:oidcIssuer.
+    requestUpdate(props.dataset.data, createSolidDataset(), async () => {
+      await overwriteFile(url, new Blob([JSON.stringify(clientId)]), {
+        fetch: fetch,
+        contentType: "application/ld+json",
+      });
+
+      props.dataset.mutate();
+
+      toast(l10n.getString("clientid-update-toast-success"), { type: "info" });
     });
-
-    props.dataset.mutate();
-
-    toast(l10n.getString("clientid-update-toast-success"), { type: "info" });
   };
 
   return (
     <>
+      {confirmation}
       <form onSubmit={onSubmit} className="relative rounded-xl bg-gray-50 pb-5">
         <h3 className="flex items-center break-words rounded-t-xl bg-gray-700 p-5 text-lg font-bold text-white md:text-xl lg:text-2xl">
           {l10n.getString("clientid-editor-heading")}

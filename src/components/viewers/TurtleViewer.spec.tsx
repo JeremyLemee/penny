@@ -12,15 +12,20 @@ declare const jest: typeof import("@jest/globals").jest;
 const mockSave = jest
   .fn<(content: string) => Promise<void>>()
   .mockResolvedValue(undefined);
+let mockOriginalContent = "";
 jest.mock("../../hooks/turtle", () => ({
   useTurtle: () => ({
-    data: { content: '<#me> <https://example.org/name> "Original" .' },
+    data: { content: mockOriginalContent },
     save: mockSave,
   }),
 }));
 jest.mock("../../functions/hasAccess", () => ({ hasAccess: () => true }));
 
-function editAndSave(content: string) {
+function editAndSave(
+  content: string,
+  original = '<#me> <https://example.org/name> "Original" .',
+) {
+  mockOriginalContent = original;
   const bundle = new FluentBundle("en-GB");
   bundle.addResource(
     new FluentResource(readFileSync("src/translations/en-GB.ftl", "utf8")),
@@ -79,4 +84,58 @@ it("saves invalid Turtle only when the user chooses to proceed", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Save anyway" }));
   await waitFor(() => expect(mockSave).toHaveBeenCalledWith(content));
   expect(mockSave).toHaveBeenCalledTimes(1);
+});
+
+const card =
+  "@prefix solid: <http://www.w3.org/ns/solid/terms#> .\n<#me> solid:oidcIssuer <https://issuer.example/> .";
+
+it.each([
+  card,
+  "<#me> <http://www.w3.org/ns/solid/terms#oidcIssuer> <https://issuer.example/> .",
+  "@prefix auth: <http://www.w3.org/ns/solid/terms#> .\n<#me> auth:oidcIssuer <https://issuer.example/> .",
+])("requires confirmation before removing the last issuer: %s", (original) => {
+  editAndSave('<#me> <https://example.org/name> "Updated" .', original);
+  expect(mockSave).not.toHaveBeenCalled();
+  expect(screen.getByRole("dialog").textContent).toMatch(/solid:oidcIssuer/);
+  expect(screen.getByRole("dialog").textContent).toMatch(/no triple/);
+});
+
+it("allows the user to save a card without its issuer after confirmation", async () => {
+  const content = '<#me> <https://example.org/name> "Updated" .';
+  editAndSave(content, card);
+  expect(mockSave).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Save anyway" }));
+  await waitFor(() => expect(mockSave).toHaveBeenCalledWith(content));
+});
+
+it("keeps the draft without saving when issuer removal is cancelled", async () => {
+  editAndSave("", card);
+  fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(mockSave).not.toHaveBeenCalled();
+  expect((screen.getByRole("textbox") as HTMLTextAreaElement).value).toBe("");
+});
+
+it("saves normally if any issuer triple remains", async () => {
+  const content =
+    '<#other> <http://www.w3.org/ns/solid/terms#oidcIssuer> "issuer" .';
+  editAndSave(content, card);
+  await waitFor(() => expect(mockSave).toHaveBeenCalledWith(content));
+  expect(screen.queryByRole("dialog")).toBeNull();
+});
+
+it("does not apply the issuer constraint when the IRI only occurs as an object", async () => {
+  editAndSave(
+    "",
+    "<#me> <https://example.org/name> <http://www.w3.org/ns/solid/terms#oidcIssuer> .",
+  );
+  await waitFor(() => expect(mockSave).toHaveBeenCalledWith(""));
+  expect(screen.queryByRole("dialog")).toBeNull();
+});
+
+it("also warns about the missing issuer when the new Turtle is invalid", () => {
+  editAndSave('<#me> missing:name "Updated" .', card);
+  expect(mockSave).not.toHaveBeenCalled();
+  expect(screen.getByRole("dialog").textContent).toMatch(/not valid Turtle/);
+  expect(screen.getByRole("dialog").textContent).toMatch(/solid:oidcIssuer/);
 });
