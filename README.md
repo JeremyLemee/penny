@@ -1,6 +1,20 @@
+#Penny 
+
 View and manipulate the data in a Solid Pod.
 
-Try it out yourself at https://Penny.VincentTunru.com.
+This project is a fork of [`Penny`](https://gitlab.com/vincenttunru/penny). You can try out yourself the original version at https://Penny.VincentTunru.com. 
+
+## AI Use
+
+Codex with GPT-6.1 Sol was used to develop the extension.
+
+## Extensions
+
+The new features include:
+
+1. **Turtle Syntax Validation**: Before saving a Turtle document, the user is notfified if the syntax is invalid. The user can cancel or explicitly proceed with saving.
+
+2. **Solid-OIDC Issuer Protection**: If a document contains a *solid:oidcIssuer* statement, the user is warned if it is removed. The user  can cancel or explicitly proceed with saving.
 
 ## Using as a Solid server UI
 
@@ -40,7 +54,3 @@ contains the Penny source code, you can start it by running:
 This will start a local server at `http://localhost:3000`, running your local
 copy of the code.
 
-## Extensions
-
-This project is extended from the original (available at: https://gitlab.com/vincenttunru/penny) using Codex with GPT-6.1 Sol. The new features include: 1) validation that a written Turtle document has valid Turtle syntax before overwriting an existing Turtle file, 
-2) validation that a WebId profile contains relevant OIDC information.
