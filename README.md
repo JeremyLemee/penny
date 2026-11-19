@@ -39,3 +39,8 @@ contains the Penny source code, you can start it by running:
 
 This will start a local server at `http://localhost:3000`, running your local
 copy of the code.
+
+## Extensions
+
+This project is extended from the original (available at: https://gitlab.com/vincenttunru/penny) using Codex with GPT-6.1 Sol. The new features include: 1) validation that a written Turtle document has valid Turtle syntax before overwriting an existing Turtle file, 
+2) validation that a WebId profile contains relevant OIDC information.
