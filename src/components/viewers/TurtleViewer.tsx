@@ -8,7 +8,7 @@ import React, {
 } from "react";
 import { toast } from "react-toastify";
 import { MdCheck } from "react-icons/md";
-import { Parser } from "n3";
+import { Parser, Quad } from "n3";
 import { SectionHeading } from "../ui/headings";
 import { ClientLocalized } from "../ClientLocalized";
 import { HasAccess } from "../HasAccess";
@@ -17,7 +17,7 @@ import { useL10n } from "../../hooks/l10n";
 import { Spinner } from "../ui/Spinner";
 import { Modal } from "../ui/modal";
 import { Button } from "../ui/forms";
-import { hasOidcIssuer } from "../../functions/oidcIssuer";
+import { removesOidcIssuer } from "../../functions/oidcIssuer";
 
 interface Props {
   url: UrlString;
@@ -32,7 +32,7 @@ export const TurtleViewer: FC<Props> = (props) => {
   const [pendingUpdate, setPendingUpdate] = useState<{
     content: string;
     error?: string;
-    missingIssuer: boolean;
+    issuerChanged: boolean;
   }>();
   const l10n = useL10n();
 
@@ -79,28 +79,31 @@ export const TurtleViewer: FC<Props> = (props) => {
 
   const requestSave = useCallback(
     (content: string) => {
-      const parserOptions = { format: "text/turtle", baseIRI: props.url };
+      const parse = (source: string) =>
+        new Parser({
+          format: "text/turtle",
+          baseIRI: props.url,
+        }).parse(source);
       let error: string | undefined;
-      let updatedHasIssuer = false;
+      let updatedTriples: Quad[] = [];
       try {
-        updatedHasIssuer = hasOidcIssuer(
-          new Parser(parserOptions).parse(content),
-        );
+        updatedTriples = parse(content);
       } catch (cause) {
         error = cause instanceof Error ? cause.message : String(cause);
       }
 
-      let previouslyHadIssuer = false;
+      let issuerChanged = false;
       try {
-        previouslyHadIssuer = hasOidcIssuer(
-          new Parser(parserOptions).parse(file.data?.content ?? ""),
+        issuerChanged = removesOidcIssuer(
+          parse(file.data?.content ?? ""),
+          updatedTriples,
+          { matchBlankNodesByStructure: true },
         );
       } catch {
         // An invalid original document cannot establish the issuer constraint.
       }
-      const missingIssuer = previouslyHadIssuer && !updatedHasIssuer;
-      if (error || missingIssuer) {
-        setPendingUpdate({ content, error, missingIssuer });
+      if (error || issuerChanged) {
+        setPendingUpdate({ content, error, issuerChanged });
         return;
       }
       saveContent(content);
@@ -123,7 +126,7 @@ export const TurtleViewer: FC<Props> = (props) => {
 
   const confirmationHeading = pendingUpdate?.error
     ? "turtle-invalid-heading"
-    : "oidc-issuer-missing-heading";
+    : "oidc-issuer-change-heading";
 
   if (!file.data) {
     return <Spinner />;
@@ -149,8 +152,8 @@ export const TurtleViewer: FC<Props> = (props) => {
               </pre>
             </>
           )}
-          {pendingUpdate?.missingIssuer && (
-            <p>{l10n.getString("oidc-issuer-missing-description")}</p>
+          {pendingUpdate?.issuerChanged && (
+            <p>{l10n.getString("oidc-issuer-change-description")}</p>
           )}
           <div className="flex space-x-5">
             <Button

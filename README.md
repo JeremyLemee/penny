@@ -1,4 +1,4 @@
-#Penny 
+# Penny 
 
 View and manipulate the data in a Solid Pod.
 
@@ -12,9 +12,9 @@ Codex with GPT-6.1 Sol was used to develop the extension.
 
 The new features include:
 
-1. **Turtle Syntax Validation**: Before saving a Turtle document, the user is notfified if the syntax is invalid. The user can cancel or explicitly proceed with saving.
+1. **Turtle Syntax Validation**: Before saving a Turtle document, the user is notified if the syntax is invalid. The user can cancel or explicitly proceed with saving.
 
-2. **Solid-OIDC Issuer Protection**: If a document contains a *solid:oidcIssuer* statement, the user is warned if it is removed. The user  can cancel or explicitly proceed with saving.
+2. **Solid-OIDC Issuer Protection**: If a document contains a *solid:oidcIssuer* RDF statement and this triple will be removed or changed by an update, the user is warned. The user can cancel or explicitly proceed with saving.
 
 ## Using as a Solid server UI
 

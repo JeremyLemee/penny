@@ -13,13 +13,13 @@ import { readFileSync } from "fs";
 import ReactModal from "react-modal";
 import { useIssuerConfirmation } from "./issuerConfirmation";
 
-function card() {
+function card(issuer = "https://issuer.example/") {
   return setThing(
     createSolidDataset(),
     setUrl(
       createThing({ url: "https://example.org/card#me" }),
       "http://www.w3.org/ns/solid/terms#oidcIssuer",
-      "https://issuer.example/",
+      issuer,
     ),
   );
 }
@@ -72,8 +72,23 @@ it("does not require confirmation for a document that never had an issuer", () =
   expect(screen.queryByRole("dialog")).toBeNull();
 });
 
-it("does not require confirmation when the updated dataset still has an issuer", () => {
+it("does not require confirmation when the issuer statement is unchanged", () => {
   const save = renderUpdate(card(), card());
   expect(save).toHaveBeenCalledTimes(1);
   expect(screen.queryByRole("dialog")).toBeNull();
+});
+
+it("requires confirmation when the existing issuer URL changes", () => {
+  const save = renderUpdate(card(), card("https://new-issuer.example/"));
+  expect(save).not.toHaveBeenCalled();
+  expect(screen.getByRole("dialog").textContent).toMatch(/removed or changed/);
+  fireEvent.click(screen.getByRole("button", { name: "Save anyway" }));
+  expect(save).toHaveBeenCalledTimes(1);
+});
+
+it("does not save an issuer URL change when the user cancels", async () => {
+  const save = renderUpdate(card(), card("https://new-issuer.example/"));
+  fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(save).not.toHaveBeenCalled();
 });

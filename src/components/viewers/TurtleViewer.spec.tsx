@@ -97,7 +97,7 @@ it.each([
   editAndSave('<#me> <https://example.org/name> "Updated" .', original);
   expect(mockSave).not.toHaveBeenCalled();
   expect(screen.getByRole("dialog").textContent).toMatch(/solid:oidcIssuer/);
-  expect(screen.getByRole("dialog").textContent).toMatch(/no triple/);
+  expect(screen.getByRole("dialog").textContent).toMatch(/removed or changed/);
 });
 
 it("allows the user to save a card without its issuer after confirmation", async () => {
@@ -116,13 +116,50 @@ it("keeps the draft without saving when issuer removal is cancelled", async () =
   expect((screen.getByRole("textbox") as HTMLTextAreaElement).value).toBe("");
 });
 
-it("saves normally if any issuer triple remains", async () => {
-  const content =
-    '<#other> <http://www.w3.org/ns/solid/terms#oidcIssuer> "issuer" .';
+it.each([
+  "<#me> <http://www.w3.org/ns/solid/terms#oidcIssuer> <https://new-issuer.example/> .",
+  "<#other> <http://www.w3.org/ns/solid/terms#oidcIssuer> <https://issuer.example/> .",
+])("warns when an existing issuer statement changes: %s", (content) => {
   editAndSave(content, card);
-  await waitFor(() => expect(mockSave).toHaveBeenCalledWith(content));
-  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(mockSave).not.toHaveBeenCalled();
+  expect(screen.getByRole("dialog").textContent).toMatch(/removed or changed/);
 });
+
+it("warns when one issuer is removed while another remains", () => {
+  editAndSave(
+    card,
+    card +
+      "\n<#other> <http://www.w3.org/ns/solid/terms#oidcIssuer> <https://other.example/> .",
+  );
+  expect(mockSave).not.toHaveBeenCalled();
+  expect(screen.getByRole("dialog").textContent).toMatch(/removed or changed/);
+});
+
+it.each([
+  card +
+    "\n<#me> <http://www.w3.org/ns/solid/terms#oidcIssuer> <https://additional.example/> .",
+  "@prefix auth: <http://www.w3.org/ns/solid/terms#> .\n<#me> auth:oidcIssuer <https://issuer.example/> .",
+])(
+  "saves normally when all original issuer triples remain: %s",
+  async (content) => {
+    editAndSave(content, card);
+    await waitFor(() => expect(mockSave).toHaveBeenCalledWith(content));
+    expect(screen.queryByRole("dialog")).toBeNull();
+  },
+);
+
+it.each([
+  "_:me <http://www.w3.org/ns/solid/terms#oidcIssuer> <https://issuer.example/> .",
+  "[] <http://www.w3.org/ns/solid/terms#oidcIssuer> <https://issuer.example/> .",
+])(
+  "does not mistake parser-generated blank node identities for an issuer change: %s",
+  async (content) => {
+    const updated = content + "\n# An unrelated comment";
+    editAndSave(updated, content);
+    await waitFor(() => expect(mockSave).toHaveBeenCalledWith(updated));
+    expect(screen.queryByRole("dialog")).toBeNull();
+  },
+);
 
 it("does not apply the issuer constraint when the IRI only occurs as an object", async () => {
   editAndSave(
@@ -138,4 +175,13 @@ it("also warns about the missing issuer when the new Turtle is invalid", () => {
   expect(mockSave).not.toHaveBeenCalled();
   expect(screen.getByRole("dialog").textContent).toMatch(/not valid Turtle/);
   expect(screen.getByRole("dialog").textContent).toMatch(/solid:oidcIssuer/);
+});
+
+it("ignores unrelated anonymous nodes added before an unchanged issuer", async () => {
+  const original =
+    "[] <http://www.w3.org/ns/solid/terms#oidcIssuer> <https://issuer.example/> .";
+  const updated = "<#other> <https://example.org/p> [] .\n" + original;
+  editAndSave(updated, original);
+  await waitFor(() => expect(mockSave).toHaveBeenCalledWith(updated));
+  expect(screen.queryByRole("dialog")).toBeNull();
 });

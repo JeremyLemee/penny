@@ -336,5 +336,5 @@ clientid-editor-redirect-url-input =
   .title = Redirect URL
 clientid-update-toast-success = Saved
 
-oidc-issuer-missing-heading = Missing OIDC issuer
-oidc-issuer-missing-description = This document previously contained a solid:oidcIssuer triple, but the update has no triple with that predicate. Removing it may prevent sign-in. Do you want to save anyway?
+oidc-issuer-change-heading = OIDC issuer statement removed or changed
+oidc-issuer-change-description = An existing solid:oidcIssuer statement may be removed or changed by this update. This may prevent sign-in. Do you want to save anyway?

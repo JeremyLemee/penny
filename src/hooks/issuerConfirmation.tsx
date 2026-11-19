@@ -25,14 +25,14 @@ export function useIssuerConfirmation() {
     <Modal
       isOpen={pending !== undefined}
       onRequestClose={() => setPending(undefined)}
-      contentLabel={l10n.getString("oidc-issuer-missing-heading")}
+      contentLabel={l10n.getString("oidc-issuer-change-heading")}
       size="sm"
     >
       <div className="space-y-5">
         <h2 className="text-2xl font-bold">
-          {l10n.getString("oidc-issuer-missing-heading")}
+          {l10n.getString("oidc-issuer-change-heading")}
         </h2>
-        <p>{l10n.getString("oidc-issuer-missing-description")}</p>
+        <p>{l10n.getString("oidc-issuer-change-description")}</p>
         <div className="flex space-x-5">
           <Button
             value={l10n.getString("turtle-invalid-cancel-button")}
