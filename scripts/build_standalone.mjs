@@ -1,6 +1,9 @@
 #!/usr/bin/env zx
 import "zx/globals";
 
+$.verbose = true;
+$.stdio = "inherit";
+
 const unneededPages = ["src/pages/server_ui.tsx"];
 await Promise.all(
   unneededPages.map(async (page) => {
