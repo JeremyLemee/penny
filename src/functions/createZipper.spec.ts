@@ -87,7 +87,7 @@ describe("zip", () => {
       },
     ];
     expect(items).toEqual(expect.arrayContaining(expectedItems));
-    expect(expectedItems).toEqual(expect.arrayContaining(items));
+    expect(expectedItems).toEqual(expect.arrayContaining(Array.from(items)));
 
     expect(unzipped.file([], "root.txt")).toEqual(new Uint8Array([12, 34]));
     expect(unzipped.file(["test"], "child.txt")).toEqual(
@@ -132,7 +132,7 @@ describe("zip", () => {
       },
     ];
     expect(items).toEqual(expect.arrayContaining(expectedItems));
-    expect(expectedItems).toEqual(expect.arrayContaining(items));
+    expect(expectedItems).toEqual(expect.arrayContaining(Array.from(items)));
 
     expect(unzipped.file([], "root.txt")).toEqual(new Uint8Array([12, 34]));
     expect(unzipped.file(["test"], "child.txt")).toEqual(

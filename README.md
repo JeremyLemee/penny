@@ -54,3 +54,9 @@ contains the Penny source code, you can start it by running:
 This will start a local server at `http://localhost:3000`, running your local
 copy of the code.
 
+### Previewing the production build locally
+
+    npm run build:standalone
+    npm start
+
+Open `http://localhost:3000` to preview the static export from `out/`.

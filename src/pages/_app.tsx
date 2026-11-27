@@ -1,8 +1,7 @@
 import {
+  EVENTS,
   getDefaultSession,
   handleIncomingRedirect,
-  onLogout,
-  onSessionRestore,
 } from "@inrupt/solid-client-authn-browser";
 import { AppProps } from "next/app";
 import { useRouter } from "next/router";
@@ -46,7 +45,6 @@ export const MyApp: FC<AppProps> = ({ Component, pageProps }) => {
     setSessionInfo(undefined);
     handleIncomingRedirect({
       restorePreviousSession: storage.getItem("autoconnect") === "true",
-      useEssSession: false,
     }).then((info) => {
       if (info && info.isLoggedIn) {
         const lastAttemptedIdp = storage.getItem("last-attempted-idp");
@@ -63,20 +61,17 @@ export const MyApp: FC<AppProps> = ({ Component, pageProps }) => {
         setSessionInfo(null);
       }
     });
-    const defaultSession = getDefaultSession();
+    const { events } = getDefaultSession();
     const logoutListener = () => setSessionInfo(null);
     const sessionRestoreListener = (currentUrl: string) => {
       router.replace(currentUrl);
     };
-    onLogout(logoutListener);
-    onSessionRestore(sessionRestoreListener);
+    events.on(EVENTS.LOGOUT, logoutListener);
+    events.on(EVENTS.SESSION_RESTORED, sessionRestoreListener);
 
     return () => {
-      // Note: this is assuming SCAB doesn't change the event names. They are
-      //       currently defined at
-      //       https://github.com/inrupt/solid-client-authn-js/blob/22db704dfa433428a0d9966e7a5ba8cd733a871f/packages/core/src/constant.ts#L38-L42
-      defaultSession.removeListener("logout", logoutListener);
-      defaultSession.removeListener("sessionRestore", sessionRestoreListener);
+      events.removeListener(EVENTS.LOGOUT, logoutListener);
+      events.removeListener(EVENTS.SESSION_RESTORED, sessionRestoreListener);
     };
   }, [router]);
 
